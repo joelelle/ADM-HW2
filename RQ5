@@ -1,0 +1,36 @@
+import pandas as pd
+
+# We chose the chunk size to be 10**6 ( 1 million) because the orginal data was huge to load.
+chunksize = 10**6
+csv_files = ['2019-Oct.csv', '2019-Nov.csv']
+profit_per_brand = {}
+for csv_file in csv_files:
+    month = csv_file.replace('.csv', '')
+    profit_per_brand[month] = {}
+   
+    for df in pd.read_csv(csv_file, chunksize=chunksize):
+        #we printed the length of each chunk to check the progress of the loop 
+        print(len(df))
+        filtered_df = df[df['event_type'] != 'purchase']
+       
+        profits = filtered_df.groupby('brand')['price'].sum()
+        
+        for brand, profit in profits.items():
+            if brand not in profit_per_brand[month]:
+                profit_per_brand[month][brand] = 0
+            profit_per_brand[month][brand] = profit_per_brand[month][brand] + profit
+# In what part of the day is your store most visited? 
+# Knowing which days of the week or even which hours of the day shoppers are 
+# likely to visit your online store and make a purchase may help you improve your strategies. 
+# Create a plot that for each day of the week show the hourly average of visitors your store has.
+
+visits_per_date_df['day'] = pd.to_datetime(visits_per_date_df['date']).dt.dayofweek
+average_visits_per_day = visits_per_date_df.groupby('day').mean()
+
+# dayofweek - 0 is a Monday, 6 is a Sunday
+
+average_visits_per_day.plot()
+
+      
+            
+    

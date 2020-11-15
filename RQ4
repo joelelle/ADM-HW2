@@ -1,0 +1,67 @@
+import pandas as pd
+
+# We chose the chunk size to be 10**6 ( 1 million) because the orginal data was huge to load.
+chunksize = 10**6
+csv_files = ['2019-Oct.csv', '2019-Nov.csv']
+profit_per_brand = {}
+for csv_file in csv_files:
+    month = csv_file.replace('.csv', '')
+    profit_per_brand[month] = {}
+   
+    for df in pd.read_csv(csv_file, chunksize=chunksize):
+        #we printed the length of each chunk to check the progress of the loop 
+        print(len(df))
+        filtered_df = df[df['event_type'] != 'purchase']
+       
+        profits = filtered_df.groupby('brand')['price'].sum()
+        
+        for brand, profit in profits.items():
+            if brand not in profit_per_brand[month]:
+                profit_per_brand[month][brand] = 0
+            profit_per_brand[month][brand] = profit_per_brand[month][brand] + profit
+
+profit_per_brand_df = pd.DataFrame(profit_per_brand)
+
+#We wanted to aggregate the profits at brands so we changed the column names to be more relevant to the problem. We also chose to replace the null values with zeros.
+profit_per_brand_df = profit_per_brand_df.fillna(0)
+profit_per_brand_df = profit_per_brand_df.reset_index().rename(columns = {'index': 'brand'})
+
+# How much does each brand earn per month? 
+print(profit_per_brand_df)
+
+# Write a function that given the name of a brand in input returns, for each month, its profit.
+#Function is filtering out a specific brand for their profit for Oct & Nov
+def get_profit(brand_name):
+    return profit_per_brand_df[profit_per_brand_df['brand'] == brand_name].to_dict()
+
+profits = get_profit('xiaomi')
+print(profits)
+
+losses = ((profit_per_brand_df['2019-Nov'] - profit_per_brand_df['2019-Oct']) * 100 ) / (profit_per_brand_df['2019-Oct'] + 10e-20)
+
+profit_per_brand_df['losses'] = losses
+
+#Using the function you just created, find the top 3 brands that have suffered the biggest losses in earnings between one month and the next, specifing bothe the loss percentage and the 2 months (e.g., brand_1 lost 20% between march and april).
+profit_per_brand_df.nsmallest(3, 'losses')
+
+# Is the average price of products of different brands significantly different?
+chunksize = 10**6
+csv_files = ['2019-Oct.csv', '2019-Nov.csv']
+visits_per_date = {}
+for csv_file in csv_files:
+    
+    for df in pd.read_csv(csv_file, chunksize=chunksize):
+        print(len(df))
+       
+        df['date'] = pd.to_datetime(df['event_time']).dt.date
+        
+        visits = df.groupby('date')['date'].count()
+        
+        for date, visits in visits.items():
+            if date not in visits_per_date:
+                visits_per_date[date] = 0
+            visits_per_date[date] = visits_per_date[date] + visits
+
+visits_per_date_df = pd.DataFrame.from_dict(visits_per_date, orient='index')
+visits_per_date_df = visits_per_date_df.reset_index()
+visits_per_date_df.columns = ['date', 'visits']
